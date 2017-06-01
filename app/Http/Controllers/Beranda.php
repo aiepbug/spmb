@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Session;
 use DB;
+use File;
 use App\Http\Requests;
 use App\Mstspmb_profil;
 use App\Mstspmb_aset;
@@ -12,14 +13,23 @@ use App\Mstspmb_user;
 use App\Mstspmb_ujian;
 use App\Mstspmb_ujian_soal;
 use App\Mstspmb_rule;
+use App\Mahasiswa;
+use App\Mst_data_dukung;
 use PDF;
 use Excel; 
+setlocale(LC_ALL, 'id_ID', 'Indonesian_indonesia', 'Indonesian');
+
 class Beranda extends Controller
 {
 	//~ public function __construct()
 	//~ {
 		//~ $this->middleware('auth');
 	//~ }
+	private $tahun;
+	public function __construct()
+    {
+		$this->tahun='2017';
+	}
 	public function index()
 	{
 		if(session()->get('level')=='admin')
@@ -128,12 +138,44 @@ class Beranda extends Controller
 							'ref_aset_tabungan.skor AS skor_tabungan' 
 							)
 					->orderBy('no_ujian')
-					->where('gelombang',session()->get('gelombang'))->take($limit)->skip($offset)->get();
-		$count=Mstspmb_profil::select('*')->where('gelombang',session()->get('gelombang'))->count();
-		$rule=Mstspmb_rule::select('*')->where('gelombang',session()->get('gelombang'))->first();
+					->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->take($limit)->skip($offset)->get();
+		$count=Mstspmb_profil::select('*')->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->count();
+		$rule=Mstspmb_rule::select('*')->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->first();
 		$page=ceil($count/$limit);
 		$nomor=1;
 		return view('admin_data_tabel',compact('data','nomor','page','skip','rule','limit'));
+	}
+	public function edit_peserta(Request $request)
+	{
+		$no_ujian=$request->input('no_ujian');
+		$skip=$request->input('skip');
+		$profil =	DB::table('mstspmb_profils')
+					->leftJoin('prodi as p1', 'mstspmb_profils.pilihan1', '=', 'p1.kode_prodi')
+					->leftJoin('prodi as p2', 'mstspmb_profils.pilihan2', '=', 'p2.kode_prodi')
+					->leftJoin('prodi as p3', 'mstspmb_profils.pilihan3', '=', 'p3.kode_prodi')
+					->select(
+							'p1.nama_prodi as p1',
+							'p2.nama_prodi as p2',
+							'p3.nama_prodi as p3',
+							'mstspmb_profils.no_ujian',
+							'mstspmb_profils.gelombang',
+							'mstspmb_profils.password',
+							'mstspmb_profils.nama', 
+							'mstspmb_profils.ruang', 
+							'mstspmb_profils.tempat_lahir', 
+							'mstspmb_profils.tanggal_lahir', 
+							'mstspmb_profils.pilihan1', 
+							'mstspmb_profils.pilihan2', 
+							'mstspmb_profils.pilihan3'
+							)
+					->where('mstspmb_profils.no_ujian',$no_ujian)
+					->first();
+		$rule=DB::table('mstspmb_rule')->select('*')->where('gelombang',$profil->gelombang)->first();
+		$prodi=DB::table('prodi')->select('*')->where('kode_jenjang','C')
+			->orderBy('kode_fakultas','asc')
+			->orderBy('kode_prodi','asc')
+			->get();
+		return view('admin_edit_data',compact('profil','no_ujian','rule','prodi','skip'));
 	}
 	public function cari(Request $request)
 	{
@@ -230,9 +272,9 @@ class Beranda extends Controller
 							)
 					->orderBy('no_ujian')
 					->where('nama','like','%'.$request->input('kata').'%')->get();
-					//~ ->where([['gelombang',session()->get('gelombang')],['nama','like',"'%".$request->input('kata')."%'"],])->take($limit)->skip($offset)->get();
-		$count=Mstspmb_profil::select('*')->where('gelombang',session()->get('gelombang'))->count();
-		$rule=Mstspmb_rule::select('*')->where('gelombang',session()->get('gelombang'))->first();
+					//~ ->where([[['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun]],['nama','like',"'%".$request->input('kata')."%'"],])->take($limit)->skip($offset)->get();
+		$count=Mstspmb_profil::select('*')->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->count();
+		$rule=Mstspmb_rule::select('*')->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->first();
 		$page=ceil($count/$limit);
 		$nomor=1;
 		return view('admin_data_tabel',compact('data','nomor','page','skip','rule','limit'));
@@ -258,31 +300,86 @@ class Beranda extends Controller
 		$limit=20;
 		$skip=$offset;
 		$offset=($request->input('offset')-1)*$limit;
-		//~ $data=Mstspmb_profil::select('*')->where('gelombang',session()->get('gelombang'))->take($limit)->skip($offset)->get();
+		//~ $data=Mstspmb_profil::select('*')->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->take($limit)->skip($offset)->get();
 		$data=DB::table('mstspmb_profils')
 					->leftJoin('prodi as p1', 'mstspmb_profils.pilihan1', '=', 'p1.kode_prodi')
 					->leftJoin('prodi as p2', 'mstspmb_profils.pilihan2', '=', 'p2.kode_prodi')
 					->leftJoin('prodi as p3', 'mstspmb_profils.pilihan3', '=', 'p3.kode_prodi')
 					->leftJoin('prodi as lulus', 'mstspmb_profils.lulus_prodi', '=', 'lulus.kode_prodi')
+					->leftJoin('mstspmb_asets', 'mstspmb_profils.no_ujian', '=', 'mstspmb_asets.no_ujian')
+					->leftJoin('ref_aset_jenis_tinggal', 'mstspmb_asets.jenis_tinggal', '=', 'ref_aset_jenis_tinggal.id')
+					->leftJoin('ref_aset_luas_rumah', 'mstspmb_asets.luas_rumah', '=', 'ref_aset_luas_rumah.id')
+					->leftJoin('ref_aset_tanah', 'mstspmb_asets.luas_tanah', '=', 'ref_aset_tanah.id')
+					->leftJoin('ref_aset_njop', 'mstspmb_asets.harga_jual', '=', 'ref_aset_njop.id')
+					->leftJoin('ref_aset_mck', 'mstspmb_asets.mck', '=', 'ref_aset_mck.id')
+					->leftJoin('ref_aset_daya_listrik', 'mstspmb_asets.daya_listrik', '=', 'ref_aset_daya_listrik.id')
+					->leftJoin('ref_aset_sumber_air', 'mstspmb_asets.sumber_air', '=', 'ref_aset_sumber_air.id')
+					->leftJoin('ref_aset_iuran_pln', 'mstspmb_asets.iuran_pln', '=', 'ref_aset_iuran_pln.id')
+					->leftJoin('ref_aset_iuran_telp', 'mstspmb_asets.iuran_telp', '=', 'ref_aset_iuran_telp.id')
+					->leftJoin('ref_aset_kendaraan_sepeda', 'mstspmb_asets.sepeda', '=', 'ref_aset_kendaraan_sepeda.id')
+					->leftJoin('ref_aset_kendaraan_motor', 'mstspmb_asets.motor', '=', 'ref_aset_kendaraan_motor.id')
+					->leftJoin('ref_aset_kendaraan_mobil', 'mstspmb_asets.mobil', '=', 'ref_aset_kendaraan_mobil.id')
+					->leftJoin('ref_aset_atap', 'mstspmb_asets.atap', '=', 'ref_aset_atap.id')
+					->leftJoin('ref_aset_lantai', 'mstspmb_asets.lantai', '=', 'ref_aset_lantai.id')
+					->leftJoin('ref_aset_pbb', 'mstspmb_asets.pbb', '=', 'ref_aset_pbb.id')
+					->leftJoin('ref_aset_hutang', 'mstspmb_asets.hutang', '=', 'ref_aset_hutang.id')
+					->leftJoin('ref_aset_piutang', 'mstspmb_asets.piutang', '=', 'ref_aset_piutang.id')
+					->leftJoin('ref_aset_tabungan', 'mstspmb_asets.tabungan', '=', 'ref_aset_tabungan.id')
 					->select(
 							'p1.singkatan_prodi as p1',
 							'p2.singkatan_prodi as p2',
 							'p3.singkatan_prodi as p3',
 							'lulus.singkatan_prodi as lulus',
+							'mstspmb_profils.gelombang', 
 							'mstspmb_profils.no_ujian', 
 							'mstspmb_profils.nama', 
 							'mstspmb_profils.ujian', 
 							'mstspmb_profils.skor_ujian', 
 							'mstspmb_profils.lulus_prodi', 
-							'mstspmb_profils.gelombang', 
 							'mstspmb_profils.pilihan1', 
 							'mstspmb_profils.pilihan2', 
 							'mstspmb_profils.pilihan3', 
-							'mstspmb_profils.password' 
+							'mstspmb_profils.password',
+							'ref_aset_jenis_tinggal.keterangan AS jenis_tinggal',
+							'ref_aset_luas_rumah.keterangan AS luas_rumah',
+							'ref_aset_tanah.keterangan AS tanah',
+							'ref_aset_njop.keterangan AS njop',
+							'ref_aset_mck.keterangan AS mck',
+							'ref_aset_daya_listrik.keterangan AS daya_listrik',
+							'ref_aset_sumber_air.keterangan AS sumber_air',
+							'ref_aset_iuran_pln.keterangan AS pln',
+							'ref_aset_iuran_telp.keterangan AS telp',
+							'ref_aset_kendaraan_sepeda.keterangan AS sepeda',
+							'ref_aset_kendaraan_motor.keterangan AS motor',
+							'ref_aset_kendaraan_mobil.keterangan AS mobil',
+							'ref_aset_atap.keterangan AS atap',
+							'ref_aset_lantai.keterangan AS lantai',
+							'ref_aset_pbb.keterangan AS pbb',
+							'ref_aset_hutang.keterangan AS hutang',
+							'ref_aset_piutang.keterangan AS piutang',
+							'ref_aset_tabungan.keterangan AS tabungan',
+							'ref_aset_jenis_tinggal.skor AS skor_jenis_tinggal',
+							'ref_aset_luas_rumah.skor AS skor_luas_rumah',
+							'ref_aset_tanah.skor AS skor_tanah',
+							'ref_aset_njop.skor AS skor_njop',
+							'ref_aset_mck.skor AS skor_mck',
+							'ref_aset_daya_listrik.skor AS skor_daya_listrik',
+							'ref_aset_sumber_air.skor AS skor_sumber_air',
+							'ref_aset_iuran_pln.skor AS skor_pln',
+							'ref_aset_iuran_telp.skor AS skor_telp',
+							'ref_aset_kendaraan_sepeda.skor AS skor_sepeda',
+							'ref_aset_kendaraan_motor.skor AS skor_motor',
+							'ref_aset_kendaraan_mobil.skor AS skor_mobil',
+							'ref_aset_atap.skor AS skor_atap',
+							'ref_aset_lantai.skor AS skor_lantai',
+							'ref_aset_pbb.skor AS skor_pbb',
+							'ref_aset_hutang.skor AS skor_hutang',
+							'ref_aset_piutang.skor AS skor_piutang',
+							'ref_aset_tabungan.skor AS skor_tabungan' 
 							)
 					->orderBy('no_ujian')
-					->where('gelombang',session()->get('gelombang'))->take($limit)->skip($offset)->get();
-		$count=Mstspmb_profil::select('*')->where('gelombang',session()->get('gelombang'))->count();
+					->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->take($limit)->skip($offset)->get();
+		$count=Mstspmb_profil::select('*')->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->count();
 		$page=ceil($count/$limit);
 		$nomor=1;
 		return view('admin_data_tabel',compact('data','nomor','page','skip','rule','limit'));
@@ -333,8 +430,8 @@ class Beranda extends Controller
 							'mstspmb_profils.password' 
 							)
 					->orderBy('no_ujian')
-					->where('gelombang',session()->get('gelombang'))->take($limit)->skip($offset)->get();
-		$count=Mstspmb_profil::select('*')->where('gelombang',session()->get('gelombang'))->count();
+					->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->take($limit)->skip($offset)->get();
+		$count=Mstspmb_profil::select('*')->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->count();
 		$page=ceil($count/$limit);
 		$nomor=1;
 		return view('admin_data_tabel',compact('data','nomor','page','skip','rule'));
@@ -575,7 +672,7 @@ class Beranda extends Controller
 		$rule=DB::table('mstspmb_rule')->select('*')->where('gelombang',$request->input('gelombang'))->get();
 		$urut=DB::table('mstspmb_profils')
 			->select(DB::raw('count(*) as total'))
-			->where('gelombang',$request->input('gelombang'))
+			->where(['gelombang'=>$request->input('gelombang'),'tahun'=>$this->tahun])
 			->get();
 		if($urut[0]->total==0)
 		{
@@ -599,6 +696,25 @@ class Beranda extends Controller
         //~ $profil->created_at = date('Y-m-d h:i:s');
         $profil->password = substr(md5($rule[0]->no_awal_kartu.$rule[0]->tahun.str_pad($urut,3,'0', STR_PAD_LEFT)),5,5);
         $profil->save();
+		return $this->menu_admin();
+	}
+	public function update_peserta(Request $request)
+	{
+		$no_ujian = $request->input('no_ujian');
+		$nama = $request->input('nama');
+        $tempat_lahir = $request->input('tempat_lahir');
+        $tanggal_lahir = $request->input('tahun').'-'.$request->input('bulan').'-'.$request->input('tanggal');
+        $pilihan1 = $request->input('pilihan1');
+        $pilihan2 = $request->input('pilihan2');
+        $pilihan3 = $request->input('pilihan3');        
+        Mstspmb_profil::where('no_ujian', $no_ujian)->update([
+																'nama' => $nama,
+																'tempat_lahir' => $tempat_lahir,
+																'tanggal_lahir' => $tanggal_lahir,
+																'pilihan1' => $pilihan1,
+																'pilihan2' => $pilihan2,
+																'pilihan3' => $pilihan3
+															]);
 		return $this->menu_admin();
 	}
 	public function cetak_kartu(Request $request)
@@ -839,7 +955,7 @@ class Beranda extends Controller
 							'mstspmb_profils.password' 
 							)
 					->orderBy('no_ujian')
-					->where('gelombang',session()->get('gelombang'))->take($limit)->skip($offset)->get();
+					->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->take($limit)->skip($offset)->get();
 		if($param=='absensi')
 		{
 			PDF::AddPage('L');
@@ -896,7 +1012,7 @@ class Beranda extends Controller
 							'mstspmb_profils.password' 
 							)
 					->orderBy('no_ujian')
-					->where('gelombang',session()->get('gelombang'))->take($limit)->skip($offset)->get();
+					->where(['gelombang'=>session()->get('gelombang'),'tahun'=>$this->tahun])->take($limit)->skip($offset)->get();
 		if($param=='absensi')
 		{
 			PDF::AddPage('L');
@@ -1160,5 +1276,29 @@ class Beranda extends Controller
 		PDF::writeHTML(view('cetak/formulir',compact('profil','rule','umum','aset')), true, false, false, false, '');
 		PDF::Output("kartu.pdf","I");
 
+	}
+	public function foto2nim(Request $request)
+	{
+		$gelombang=$request->input('gelombang');
+		$rule=DB::table('mstspmb_rule')->select('mstspmb_rule.*')->where('gelombang',$gelombang)->first();
+		$maba =	Mstspmb_profil::where(['gelombang'=>$gelombang,'tahun'=>$this->tahun])->get();
+		$err='';
+		$no=1;
+		foreach($maba as $m)
+		{
+			
+			$mahasiswa=Mahasiswa::select('*')->where('no_tes',$m->no_ujian)->first();
+			$file='asset/img/foto/'.$m->no_ujian.'.jpg';
+			$dest='asset/img/foto/nim/'.$mahasiswa['nim'].'.jpg';
+			if (File::exists($file))
+			{
+				File::copy($file,$dest);
+			}
+			else
+			{
+				$err .='<tr><td>'.$no++.'. </td><td> Gagal copy foto no ujian </td><td>'.$m->no_ujian.'</td><td> - NIM:</td><td>'.$mahasiswa['nim'].'</td></tr>';
+			}
+		}
+		return $err;
 	}
 }

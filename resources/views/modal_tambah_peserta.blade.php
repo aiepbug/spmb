@@ -15,7 +15,7 @@ $thn = array_combine(range((date("Y")-15), 1950), range((date("Y")-15), 1950));
 		<select style="width:200px;" class="form-control" id="glb">
 			<option disabled value="umptkin">UM PTKIN</option>
 			<option selected value="mandiri1">Mandiri I</option>
-			<option value="mandiri2">Mandiri II</option>
+			<option disabled value="mandiri2">Mandiri II</option>
 		</select>
 	</div>
 	<div class="form-group">

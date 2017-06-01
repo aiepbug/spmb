@@ -40,7 +40,7 @@ function gels($x,$y)
 				<li><a onclick="cetak2('presensi')" href="#">Presensi</a></li>
 				<li><a onclick="cetak2('ruangan')" href="#">Daftar ruangan</a></li>
 				<li role="separator" class="divider"></li>
-				<li><a href="#">Lainnya</a></li>
+				<li><a onclick="foto2nim()" href="#">Foto 2 NIM</a></li>
 			</ul>
 		</span>
 		<span id="info" class=""></span>
@@ -115,6 +115,21 @@ function cetak(param)
 	var _token="{{ csrf_token() }}";
 	
 	window.open('cetak_kelas/'+_token+'/'+gelombang+'/'+halaman+'/'+param,'','width=800,height=600');
+}
+function foto2nim()
+{
+	var gelombang="{{ session('gelombang') }}";
+	alert(gelombang);return false;
+	var token="{{ csrf_token() }}";
+	$.ajax({
+		url      : "foto2nim",
+		data     : ({ _token:token,gelombang:gelombang }),
+		type     : 'POST',
+		dataType : 'html',
+		success  : function(respon){
+				$('#tabel').html(respon);
+				},
+	})
 }
 function cetak2(param)
 {

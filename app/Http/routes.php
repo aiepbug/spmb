@@ -46,7 +46,9 @@ Route::group(['middleware' => 'web'], function () {
 	Route::post('/cetak2','Beranda@cetak2');
 	Route::post('/masuk','Beranda@masuk');
 	Route::post('/tambah_peserta','Beranda@tambah_peserta');
+	Route::post('/edit_peserta','Beranda@edit_peserta');
 	Route::post('/simpan_peserta','Beranda@simpan_peserta');
+	Route::post('/update_peserta','Beranda@update_peserta');
 	Route::post('/cetak_kartu','Beranda@cetak_kartu');
 	Route::post('/cetak_biodata','Beranda@cetak_biodata');
 	Route::post('/upload_foto','Beranda@upload_foto');
@@ -67,5 +69,6 @@ Route::group(['middleware' => 'web'], function () {
 	Route::post('/maba/simpan_sekolah','Maba@simpan_sekolah');
 	Route::post('/maba/simpan_ortu','Maba@simpan_ortu');
 	Route::post('/maba/simpan_aset','Maba@simpan_aset');
+	Route::post('/foto2nim','Beranda@foto2nim');
     //~ Route::get('/home', 'HomeController@index');
 });

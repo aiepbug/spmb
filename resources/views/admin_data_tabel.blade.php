@@ -20,7 +20,8 @@ function stt($s,$u)
 	<?php $stt=App\Mstspmb_aset::where('no_ujian',$m->no_ujian)->first()?>
 		<tr>
 			<td class="tengah">{{ ($nomor++)+(($skip-1)*$limit) }}</td>
-			<td class="tengah">{{ strtoupper($m->gelombang) }} - {{ $m->no_ujian }}</td>
+			<td class="tengah">{{ strtoupper($m->gelombang) }} - {{ $m->no_ujian }}
+				<small><a href="javascript:void(0)" onclick="edit_peserta('{{ $m->no_ujian }}')" data-target="#modal" data-toggle="modal">edit</a></small></td>
 			<td class="tengah"><small class="text-muted">{{ $m->password }}</small></td>
 			<td><small class="text-muted">({{ 
 				$m->skor_jenis_tinggal+
@@ -174,7 +175,23 @@ function upload_foto(no_ujian)
 		xhr.send(fd);
 	}
 }
+function edit_peserta(no_ujian)
+{
+	var skip="{{ $skip }}";
+	var token="{{ csrf_token() }}";
+	$('#isimodal').html('');
+	$.ajax({
+		url      : "edit_peserta",
+		data     : ({ _token:token,no_ujian:no_ujian,skip:skip }),
+		type     : 'POST',
+		dataType : 'html',
+		success  : function(respon){
+			$('#isimodal').html(respon);
+			},
+	})	
+}
 </script>
+
 <style>
 .tbl_upload_foto,
 .tbl_upload_foto input {

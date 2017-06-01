@@ -17,6 +17,10 @@ function jawab($j)
 	{
 		return 'D';
 	}
+	else if($j==5)
+	{
+		return 'E';
+	}
 	else 
 	{
 		return 'Undifined';
@@ -28,11 +32,12 @@ function jawab($j)
 	<p><strong>Kategori : {{ $soal->jenis }}</strong><span class="pull-right">@if($soal->jawaban=='')  @else Anda memilih jawaban {{ jawab($soal->jawaban) }} @endif</span></p>
 	<input id="no_soal" type="hidden" value="{{ $soal->no_soal }}">
 	<hr>
-	<p>{{ $soal->soal }}</p>
-	<p><a onclick="jawab(1)" href="javascript::javascript">Jawaban A</a><BR> {{ $soal->jawaban1 }}</p>
-	<p><a onclick="jawab(2)" href="javascript::javascript">Jawaban B</a><BR> {{ $soal->jawaban2 }}</p>
-	<p><a onclick="jawab(3)" href="javascript::javascript">Jawaban C</a><BR> {{ $soal->jawaban3 }}</p>
-	<p><a onclick="jawab(4)" href="javascript::javascript">Jawaban D</a><BR> {{ $soal->jawaban4 }}</p>
+	<p>{!! $soal->soal !!}</p>
+	<p><a onclick="jawab(1)" href="javascript::javascript">Jawaban A</a><BR> {!! $soal->jawaban1 !!}</p>
+	<p><a onclick="jawab(2)" href="javascript::javascript">Jawaban B</a><BR> {!! $soal->jawaban2 !!}</p>
+	<p><a onclick="jawab(3)" href="javascript::javascript">Jawaban C</a><BR> {!! $soal->jawaban3 !!}</p>
+	<p><a onclick="jawab(4)" href="javascript::javascript">Jawaban D</a><BR> {!! $soal->jawaban4 !!}</p>
+	<p><a onclick="jawab(5)" href="javascript::javascript">Jawaban E</a><BR> {!! $soal->jawaban5 !!}</p>
 </div>
 
 <script>

@@ -89,6 +89,7 @@
 				  </label>
 				</div>
 				<button class="btn btn-lg btn-primary btn-block" type="submit">Login</button>
+				<small class="tengah">untuk tampilan terbaik pakai <a href="http://192.168.1.110/download/software/windows/internet/24.0.1312.45_chrome_installer.exe" target="_blank">google chrome</a></small>
 				@if(Session::has('message'))
 				<p class="alert {{ Session::get('alert-class', 'alert-info') }}">{{ Session::get('message') }}</p>
 				@endif
